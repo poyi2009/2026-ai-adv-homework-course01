@@ -29,12 +29,10 @@ apiRouter.post('/ecpay/initiate/:orderId', authMiddleware, (req, res) => {
 
   const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
 
-  // 若尚無 merchant_trade_no 則生成並存入 DB（避免重複提交產生新流水號）
-  let merchantTradeNo = order.merchant_trade_no;
-  if (!merchantTradeNo) {
-    merchantTradeNo = generateMerchantTradeNo();
-    db.prepare('UPDATE orders SET merchant_trade_no = ? WHERE id = ?').run(merchantTradeNo, orderId);
-  }
+  // ECPay 規定：已送出的 MerchantTradeNo 即使付款未完成也不可重複使用
+  // 因此每次發起付款都產生新流水號並覆寫 DB（result callback 以最新值查單）
+  const merchantTradeNo = generateMerchantTradeNo();
+  db.prepare('UPDATE orders SET merchant_trade_no = ? WHERE id = ?').run(merchantTradeNo, orderId);
 
   const orderWithTradeNo = { ...order, merchant_trade_no: merchantTradeNo };
   const params = buildAioParams(orderWithTradeNo, items);

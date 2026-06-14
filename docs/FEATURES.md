@@ -200,8 +200,10 @@ Transaction 步驟：
 - 訂單 `status` 非 `pending` → 400 INVALID_STATUS
 
 核心邏輯：
-1. 若訂單已有 `merchant_trade_no`（重複提交），沿用既有值，不重新生成
-2. 新訂單生成格式：`EC` + 13 位時間戳 + 7 位隨機英數大寫，取前 20 字
+1. **每次呼叫都產生全新的 `MerchantTradeNo`**，並覆寫 DB 中的舊值
+   - ECPay 規定：已送出的流水號不得重複使用（即使付款取消或失敗亦然）
+   - `result` 回調以 DB 最新值查單，因此覆寫不影響結果比對
+2. 流水號格式：`EC` + 13 位時間戳 + 7 位隨機英數大寫，取前 20 字
 3. 呼叫 `ecpayService.buildAioParams()` 組裝完整 AIO 參數（含 CheckMacValue）
 
 成功回應（200）：

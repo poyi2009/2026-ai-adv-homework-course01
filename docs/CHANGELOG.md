@@ -10,6 +10,10 @@
   - 支援 `ECPAY_ENV=staging/production` 切換端點（預設 staging）
   - 支援 `BASE_URL` 環境變數設定回調 URL
 
+### 修復
+
+- **ECPay 錯誤 10300028（訂單編號重覆）**：`initiate` 端點改為每次都產生全新的 `MerchantTradeNo` 並覆寫 DB，不再沿用舊值；ECPay 規定已送出的流水號即使付款未完成也不可重複使用
+
 ### 變更
 
 - `orders` 資料表新增 `merchant_trade_no TEXT UNIQUE` 欄位（DB migration 自動補欄位）
