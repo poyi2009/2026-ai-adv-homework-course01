@@ -18,14 +18,17 @@
 │   │   ├── adminMiddleware.js # 檢查 req.user.role === 'admin'，需在 authMiddleware 之後
 │   │   ├── sessionMiddleware.js # 讀取 X-Session-Id header，設定 req.sessionId
 │   │   └── errorHandler.js   # 全域錯誤 handler，500 隱藏細節，非 500 用安全訊息
-│   └── routes/
-│       ├── authRoutes.js      # POST /register, POST /login, GET /profile
-│       ├── productRoutes.js   # GET /products, GET /products/:id（公開）
-│       ├── cartRoutes.js      # GET/POST/PATCH/DELETE /cart（雙模式認證）
-│       ├── orderRoutes.js     # POST/GET/PATCH /orders（JWT 必要）
-│       ├── adminProductRoutes.js # GET/POST/PUT/DELETE /admin/products（admin only）
-│       ├── adminOrderRoutes.js   # GET /admin/orders（admin only，唯讀）
-│       └── pageRoutes.js      # SSR 頁面路由，回傳 EJS render 結果
+│   ├── routes/
+│   │   ├── authRoutes.js      # POST /register, POST /login, GET /profile
+│   │   ├── productRoutes.js   # GET /products, GET /products/:id（公開）
+│   │   ├── cartRoutes.js      # GET/POST/PATCH/DELETE /cart（雙模式認證）
+│   │   ├── orderRoutes.js     # POST/GET/PATCH /orders（JWT 必要）
+│   │   ├── paymentRoutes.js   # POST /api/payments/ecpay/initiate（JWT）+ /payments/ecpay/result、/notify（無認證）
+│   │   ├── adminProductRoutes.js # GET/POST/PUT/DELETE /admin/products（admin only）
+│   │   ├── adminOrderRoutes.js   # GET /admin/orders（admin only，唯讀）
+│   │   └── pageRoutes.js      # SSR 頁面路由，回傳 EJS render 結果
+│   └── services/
+│       └── ecpayService.js    # ECPay AIO 工具函式：CheckMacValue 計算、buildAioParams、queryTradeInfo
 │
 ├── views/
 │   ├── layouts/
@@ -97,8 +100,8 @@ node server.js
   │    ├─ cors({ origin: FRONTEND_URL || 'http://localhost:3001' })
   │    ├─ express.json() + express.urlencoded()
   │    ├─ sessionMiddleware（讀 X-Session-Id → req.sessionId）
-  │    ├─ 掛載 API routes
-  │    ├─ 掛載 page routes
+  │    ├─ 掛載 API routes（含 /api/payments → paymentRoutes.apiRouter）
+  │    ├─ 掛載 page routes（含 /payments → paymentRoutes.pageRouter）
   │    ├─ 404 handler（API 回 JSON，其他 render 404.ejs）
   │    └─ errorHandler（全域 catch）
   └─ app.listen(PORT)
@@ -114,6 +117,8 @@ node server.js
 | `/api/products` | productRoutes.js | 無 | 公開商品列表與詳情 |
 | `/api/cart` | cartRoutes.js | 雙模式（JWT 或 session） | 購物車 CRUD |
 | `/api/orders` | orderRoutes.js | JWT 必要 | 建立訂單、查詢、模擬付款 |
+| `/api/payments` | paymentRoutes.js（apiRouter） | JWT 必要 | ECPay 付款發起 |
+| `/payments` | paymentRoutes.js（pageRouter） | 無 | ECPay 回調接收（result、notify） |
 | `/api/admin/products` | adminProductRoutes.js | JWT + admin role | 後台商品管理 |
 | `/api/admin/orders` | adminOrderRoutes.js | JWT + admin role | 後台訂單查閱 |
 | `/` | pageRoutes.js | 無（前端 JS 自行處理） | SSR 頁面 |
@@ -134,7 +139,10 @@ node server.js
 | POST | /api/orders | JWT | 從購物車建立訂單（transaction） |
 | GET | /api/orders | JWT | 我的訂單列表 |
 | GET | /api/orders/:id | JWT | 訂單詳情（只能看自己的） |
-| PATCH | /api/orders/:id/pay | JWT | 模擬付款（action: success\|fail） |
+| PATCH | /api/orders/:id/pay | JWT | 模擬付款（action: success\|fail，僅測試用） |
+| POST | /api/payments/ecpay/initiate/:orderId | JWT | ECPay AIO 付款發起，回傳 formAction + params |
+| POST | /payments/ecpay/result | 無 | ECPay OrderResultURL 回調，主動驗證並更新 status |
+| POST | /payments/ecpay/notify | 無 | ECPay ReturnURL S2S（本機收不到），固定回 1\|OK |
 | GET | /api/admin/products | JWT+admin | 後台商品列表（分頁） |
 | POST | /api/admin/products | JWT+admin | 新增商品 |
 | PUT | /api/admin/products/:id | JWT+admin | 更新商品（partial update） |
@@ -258,6 +266,7 @@ node server.js
 | recipient_address | TEXT | NOT NULL | 收件地址 |
 | total_amount | INTEGER | NOT NULL | 訂單總金額 |
 | status | TEXT | NOT NULL, DEFAULT 'pending', CHECK IN ('pending','paid','failed') | 訂單狀態 |
+| merchant_trade_no | TEXT | UNIQUE（新建 DB）/ 無約束（migration） | ECPay 流水號，格式 `EC` + 13 位時間戳 + 7 位隨機英數，付款前生成 |
 | created_at | TEXT | NOT NULL, DEFAULT datetime('now') | 建立時間 |
 
 ### order_items

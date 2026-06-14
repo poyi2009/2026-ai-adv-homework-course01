@@ -34,6 +34,10 @@ app.use('/api/products', require('./src/routes/productRoutes'));
 app.use('/api/cart', require('./src/routes/cartRoutes'));
 app.use('/api/orders', require('./src/routes/orderRoutes'));
 
+const paymentRoutes = require('./src/routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes.apiRouter);
+app.use('/payments', paymentRoutes.pageRouter);
+
 // Page Routes
 app.use('/', require('./src/routes/pageRoutes'));
 

@@ -1,5 +1,33 @@
 # CHANGELOG.md
 
+## [Unreleased]
+
+### 新增
+
+- **ECPay AIO 金流串接**：整合綠界科技全方位金流（CMV-SHA256），取代模擬付款按鈕
+  - `src/services/ecpayService.js`：`ecpayUrlEncode`、`generateCheckMacValue`、`buildAioParams`、`queryTradeInfo`
+  - `src/routes/paymentRoutes.js`：`POST /api/payments/ecpay/initiate/:orderId`（JWT）、`POST /payments/ecpay/result`、`POST /payments/ecpay/notify`
+  - 支援 `ECPAY_ENV=staging/production` 切換端點（預設 staging）
+  - 支援 `BASE_URL` 環境變數設定回調 URL
+
+### 變更
+
+- `orders` 資料表新增 `merchant_trade_no TEXT UNIQUE` 欄位（DB migration 自動補欄位）
+- 訂單詳情頁（`/orders/:id`）移除假付款按鈕，改為「前往 ECPay 付款」按鈕
+- 付款結果驗證改由後端主動呼叫 QueryTradeInfo API（瀏覽器 redirect 觸發），不依賴 S2S ReturnURL
+
+### 必要環境變數（新增）
+
+| 變數 | 說明 |
+|------|------|
+| `ECPAY_MERCHANT_ID` | 綠界商店代號 |
+| `ECPAY_HASH_KEY` | AIO HashKey |
+| `ECPAY_HASH_IV` | AIO HashIV |
+| `ECPAY_ENV` | `staging`（預設）或 `production` |
+| `BASE_URL` | 伺服器對外 URL（預設 `http://localhost:3001`） |
+
+---
+
 ## [1.0.0] - 2026-06-14
 
 ### 新增

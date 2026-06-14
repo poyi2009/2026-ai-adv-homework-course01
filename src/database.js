@@ -52,7 +52,7 @@ function initializeDatabase() {
       recipient_address TEXT NOT NULL,
       total_amount INTEGER NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'failed')),
-
+      merchant_trade_no TEXT UNIQUE,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
@@ -164,5 +164,12 @@ function seedProducts() {
 }
 
 initializeDatabase();
+
+// 對既有 DB 補欄位（SQLite ALTER TABLE 不支援 UNIQUE，唯一性由應用層保證）
+try {
+  db.exec('ALTER TABLE orders ADD COLUMN merchant_trade_no TEXT');
+} catch (_) {
+  // 欄位已存在，忽略
+}
 
 module.exports = db;

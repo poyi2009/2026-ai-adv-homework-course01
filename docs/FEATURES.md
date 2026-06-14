@@ -8,7 +8,7 @@
 | 商品瀏覽（公開） | 完成 |
 | 購物車（訪客 + 會員） | 完成 |
 | 訂單建立與查詢 | 完成 |
-| 模擬付款 | 完成 |
+| ECPay AIO 金流串接 | 完成 |
 | 後台商品管理 | 完成 |
 | 後台訂單查閱 | 完成 |
 | 前台 SSR 頁面 | 完成 |
@@ -156,9 +156,9 @@ Transaction 步驟：
 
 **行為描述**：取得單一訂單詳情（含 order_items）。強制過濾 `user_id = req.user.userId`，使用者只能查看自己的訂單。
 
-### PATCH /api/orders/:id/pay
+### PATCH /api/orders/:id/pay（已由 ECPay 流程取代）
 
-**行為描述**：模擬付款，更新訂單 status。只有 `status = 'pending'` 的訂單可操作。
+**行為描述**：模擬付款端點（僅供測試用），直接更新訂單狀態，不呼叫真實金流。前台 UI 已移除對應按鈕，改用 ECPay 付款流程。
 
 必填：`action`（`"success"` → `"paid"` 或 `"fail"` → `"failed"`）
 
@@ -166,6 +166,80 @@ Transaction 步驟：
 - `action` 非 success/fail → 400 VALIDATION_ERROR
 - 訂單不存在（或非本人）→ 404
 - 訂單 status 非 pending → 400 INVALID_STATUS
+
+---
+
+## ECPay AIO 金流串接
+
+整合綠界科技全方位金流（AIO，CMV-SHA256），讓消費者從訂單詳情頁跳轉至 ECPay 付款頁完成交易。由於伺服器運行於本機，ReturnURL S2S 通知無法觸及，**付款驗證改為 OrderResultURL redirect 回來時，後端主動呼叫 QueryTradeInfo API 核實**。
+
+### 付款流程
+
+```
+[訂單詳情頁] 「前往 ECPay 付款」按鈕（status = 'pending' 才顯示）
+     ↓ POST /api/payments/ecpay/initiate/:orderId（JWT 認證）
+[後端] 生成 MerchantTradeNo，儲存至 DB，計算 CheckMacValue
+     ↓ 回傳 { formAction, params }
+[前端] 動態建立 <form>，auto-submit 到 ECPay 付款頁
+     ↓
+[消費者在 ECPay 付款]
+     ↓ 瀏覽器 POST redirect 到 /payments/ecpay/result
+[後端] 查 DB 取訂單 → 呼叫 QueryTradeInfo → 更新 status
+     ↓ 302 redirect 到 /orders/:id?payment=success（或 ?payment=failed）
+[訂單詳情頁] 偵測 ?payment query → 顯示付款成功/失敗通知
+```
+
+### POST /api/payments/ecpay/initiate/:orderId
+
+**認證**：JWT 必要（只能操作自己的訂單）
+
+**行為描述**：為指定訂單建立 ECPay AIO 付款參數。
+
+前置驗證：
+- 訂單不屬於目前登入者 → 404 NOT_FOUND
+- 訂單 `status` 非 `pending` → 400 INVALID_STATUS
+
+核心邏輯：
+1. 若訂單已有 `merchant_trade_no`（重複提交），沿用既有值，不重新生成
+2. 新訂單生成格式：`EC` + 13 位時間戳 + 7 位隨機英數大寫，取前 20 字
+3. 呼叫 `ecpayService.buildAioParams()` 組裝完整 AIO 參數（含 CheckMacValue）
+
+成功回應（200）：
+```json
+{
+  "data": {
+    "formAction": "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5",
+    "params": { "MerchantID": "...", "MerchantTradeNo": "...", "CheckMacValue": "...", ... }
+  },
+  "error": null,
+  "message": "付款資訊建立成功"
+}
+```
+
+前端收到後，動態建立隱藏 `<form>` 並自動 submit 至 `formAction`。
+
+### POST /payments/ecpay/result
+
+**認證**：無（ECPay 瀏覽器 redirect，不帶 JWT）
+
+**行為描述**：ECPay `OrderResultURL` 的接收端點，處理付款結果。
+
+流程：
+1. 讀取 `req.body.MerchantTradeNo`，查 DB 找對應訂單
+2. 若訂單 `status` 非 `pending`（已處理過），直接依現有狀態 redirect（冪等）
+3. 呼叫 `ecpayService.queryTradeInfo()` 主動查詢 ECPay 付款結果
+4. `TradeStatus === '1'` → 更新 `status = 'paid'`，否則 → `status = 'failed'`
+5. 302 redirect 到 `/orders/:id?payment=success` 或 `?payment=failed`
+
+異常處理：
+- `MerchantTradeNo` 缺失 → redirect 到 `/?payment=failed`
+- QueryTradeInfo 網路錯誤 → redirect 到 `/orders/:id?payment=failed`
+
+### POST /payments/ecpay/notify
+
+**認證**：無（ECPay ReturnURL S2S，本機環境收不到）
+
+**行為描述**：固定回應 `1|OK`，防止 ECPay 重試 S2S 通知報錯。
 
 ---
 
