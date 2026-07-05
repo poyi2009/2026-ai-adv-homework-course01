@@ -1,17 +1,21 @@
-<aside class="w-60 bg-gray-900 text-white min-h-full">
-  <nav class="py-4">
+<div id="admin-sidebar-backdrop" class="hidden md:hidden fixed top-16 left-0 right-0 bottom-0 bg-black/40 z-30"></div>
+<aside
+  id="admin-sidebar"
+  class="w-60 bg-admin-panel md:min-h-full fixed md:static top-16 bottom-0 md:top-auto md:bottom-auto left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-200"
+>
+  <nav class="py-6 flex flex-col gap-1">
     <a
       href="/admin/products"
-      class="flex items-center gap-3 px-6 py-3 text-sm transition-colors hover:text-white hover:bg-gray-800 <%= typeof currentPath !== 'undefined' && currentPath === '/admin/products' ? 'bg-gray-800 !text-white border-r-2 border-rose-primary' : 'text-gray-400' %>"
+      class="flex items-center gap-3 px-6 py-3 text-sm transition-colors border-l-4 <%= typeof currentPath !== 'undefined' && currentPath === '/admin/products' ? 'border-gold text-berry font-semibold' : 'border-transparent text-text-secondary hover:text-berry' %>"
     >
-      <span>&#128230;</span>
+      <svg class="w-[18px] h-[18px]"><use href="#icon-package"></use></svg>
       <span>商品管理</span>
     </a>
     <a
       href="/admin/orders"
-      class="flex items-center gap-3 px-6 py-3 text-sm transition-colors hover:text-white hover:bg-gray-800 <%= typeof currentPath !== 'undefined' && currentPath === '/admin/orders' ? 'bg-gray-800 !text-white border-r-2 border-rose-primary' : 'text-gray-400' %>"
+      class="flex items-center gap-3 px-6 py-3 text-sm transition-colors border-l-4 <%= typeof currentPath !== 'undefined' && currentPath === '/admin/orders' ? 'border-gold text-berry font-semibold' : 'border-transparent text-text-secondary hover:text-berry' %>"
     >
-      <span>&#128196;</span>
+      <svg class="w-[18px] h-[18px]"><use href="#icon-file-text"></use></svg>
       <span>訂單管理</span>
     </a>
   </nav>

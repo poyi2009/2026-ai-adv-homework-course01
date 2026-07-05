@@ -1,11 +1,24 @@
-<header class="sticky top-0 z-50 bg-gray-900 text-white shadow-sm">
-  <div class="flex items-center justify-between px-6 h-16">
-    <span class="font-bold text-lg" style="font-family: 'Noto Serif TC', serif;">花漾生活</span>
-    <div id="admin-auth-nav" class="flex items-center gap-4 text-sm">
-      <a href="/" class="text-gray-300 hover:text-white">返回前台</a>
-      <span class="text-gray-600">|</span>
-      <span class="text-gray-400" id="admin-username"></span>
-      <button onclick="Auth.logout()" class="text-gray-300 hover:text-white">登出</button>
+<header class="sticky top-0 z-50 bg-white shadow-sm border-b border-border-hairline">
+  <div class="relative flex items-center justify-between px-4 md:px-6 h-16">
+    <button type="button" id="admin-sidebar-toggle" class="md:hidden text-text-primary" aria-label="開啟選單">
+      <svg class="w-6 h-6"><use href="#icon-menu"></use></svg>
+    </button>
+
+    <span class="font-display text-base md:text-lg font-medium text-berry">花漾生活 管理後台</span>
+
+    <button type="button" id="admin-user-toggle" class="md:hidden text-text-primary" aria-label="帳號選單">
+      <svg class="w-6 h-6"><use href="#icon-user"></use></svg>
+    </button>
+
+    <div
+      id="admin-auth-nav"
+      class="flex-col items-center gap-3 py-4 absolute top-full left-0 right-0 bg-white border-b border-border-hairline shadow-md md:static md:top-auto md:left-auto md:right-auto md:border-0 md:shadow-none md:bg-transparent md:py-0 md:w-auto md:!flex md:flex-row md:items-center md:gap-4 text-sm text-center"
+      style="display: none;"
+    >
+      <a href="/" class="text-text-secondary hover:text-rose-primary transition-colors">返回前台</a>
+      <span class="hidden md:inline text-border-hairline">|</span>
+      <span class="text-text-primary" id="admin-username"></span>
+      <button onclick="Auth.logout()" class="border border-rose-primary text-rose-primary px-4 py-1.5 rounded-full text-sm hover:bg-rose-bg transition-colors">登出</button>
     </div>
   </div>
 </header>

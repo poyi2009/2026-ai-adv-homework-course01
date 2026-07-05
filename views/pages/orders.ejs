@@ -1,5 +1,5 @@
 <div id="app">
-  <h1 class="text-2xl font-bold text-text-primary mb-6" style="font-family: 'Noto Serif TC', serif;">我的訂單</h1>
+  <h1 class="font-display text-2xl text-text-primary mb-6">我的訂單</h1>
 
   <div v-if="loading" class="flex justify-center py-12">
     <div class="w-8 h-8 border-4 border-rose-primary border-t-transparent rounded-full animate-spin"></div>
@@ -13,27 +13,48 @@
   </div>
 
   <div v-else class="space-y-4">
+    <!-- Desktop row -->
     <a
       v-for="order in orders"
       :key="order.id"
       :href="'/orders/' + order.id"
-      class="block bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow"
+      class="hidden md:flex items-center justify-between bg-white rounded-card shadow-sm p-6 hover:shadow-md transition-shadow"
+    >
+      <div>
+        <p class="font-display text-base text-text-primary">{{ order.order_no }}</p>
+        <p class="text-xs text-text-muted mt-1">{{ new Date(order.created_at).toLocaleDateString('zh-TW') }}</p>
+      </div>
+      <div class="flex items-center gap-5">
+        <span class="font-display text-lg text-berry">NT$ {{ order.total_amount.toLocaleString() }}</span>
+        <span
+          class="text-xs px-3 py-1 rounded-full font-medium"
+          :class="statusMap[order.status]?.cls || 'bg-gray-100 text-gray-600'"
+        >
+          {{ statusMap[order.status]?.label || order.status }}
+        </span>
+        <svg class="w-[18px] h-[18px] text-text-muted"><use href="#icon-chevron-right"></use></svg>
+      </div>
+    </a>
+
+    <!-- Mobile card -->
+    <a
+      v-for="order in orders"
+      :key="'m-' + order.id"
+      :href="'/orders/' + order.id"
+      class="flex md:hidden flex-col gap-2 bg-white rounded-card shadow-sm p-4"
     >
       <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-text-secondary">訂單編號：{{ order.order_no }}</p>
-          <p class="text-xs text-text-muted mt-1">{{ new Date(order.created_at).toLocaleDateString('zh-TW') }}</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="font-bold text-text-primary">NT$ {{ order.total_amount.toLocaleString() }}</span>
-          <span
-            class="text-xs px-3 py-1 rounded-full font-medium"
-            :class="statusMap[order.status]?.cls || 'bg-gray-100 text-gray-600'"
-          >
-            {{ statusMap[order.status]?.label || order.status }}
-          </span>
-          <span class="text-text-muted">&#8594;</span>
-        </div>
+        <span class="font-display text-sm text-text-primary">{{ order.order_no }}</span>
+        <span
+          class="text-xs px-2.5 py-1 rounded-full font-medium"
+          :class="statusMap[order.status]?.cls || 'bg-gray-100 text-gray-600'"
+        >
+          {{ statusMap[order.status]?.label || order.status }}
+        </span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-text-muted text-xs">{{ new Date(order.created_at).toLocaleDateString('zh-TW') }}</span>
+        <span class="font-display text-base text-berry">NT$ {{ order.total_amount.toLocaleString() }}</span>
       </div>
     </a>
   </div>

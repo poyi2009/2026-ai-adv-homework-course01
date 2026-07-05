@@ -2,10 +2,11 @@
 <html lang="zh-TW">
 <%- include('../partials/head') %>
 <body class="min-h-screen flex flex-col">
+  <%- include('../partials/icons') %>
   <%- include('../partials/admin-header') %>
   <div class="flex flex-1">
     <%- include('../partials/admin-sidebar') %>
-    <main class="flex-1 p-8 bg-cream">
+    <main class="flex-1 p-4 md:p-8 bg-cream min-w-0">
       <%- body %>
     </main>
   </div>
@@ -21,6 +22,34 @@
       if (!Auth.requireAdmin()) return;
       var el = document.getElementById('admin-username');
       if (el) el.textContent = Auth.getUser()?.name || '';
+
+      var sidebar = document.getElementById('admin-sidebar');
+      var backdrop = document.getElementById('admin-sidebar-backdrop');
+      var sidebarToggle = document.getElementById('admin-sidebar-toggle');
+
+      function closeSidebar() {
+        if (sidebar) sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+      function openSidebar() {
+        if (sidebar) sidebar.classList.remove('-translate-x-full');
+        if (backdrop) backdrop.classList.remove('hidden');
+      }
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
+          if (sidebar && sidebar.classList.contains('-translate-x-full')) openSidebar();
+          else closeSidebar();
+        });
+      }
+      if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+      var userToggle = document.getElementById('admin-user-toggle');
+      var authPanel = document.getElementById('admin-auth-nav');
+      if (userToggle && authPanel) {
+        userToggle.addEventListener('click', function () {
+          authPanel.style.display = authPanel.style.display === 'flex' ? 'none' : 'flex';
+        });
+      }
     });
   </script>
   <% if (typeof pageScript !== 'undefined' && pageScript) { %>

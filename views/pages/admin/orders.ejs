@@ -1,17 +1,19 @@
 <div id="app">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-text-primary">訂單管理</h1>
-    <div class="flex items-center gap-3">
-      <label class="text-sm text-text-secondary">狀態篩選</label>
-      <select
-        v-model="statusFilter"
-        class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-rose-primary"
-      >
-        <option value="">全部</option>
-        <option value="pending">待付款</option>
-        <option value="paid">已付款</option>
-        <option value="failed">付款失敗</option>
-      </select>
+  <div class="flex items-center justify-between gap-3 flex-wrap mb-6">
+    <h1 class="font-display text-2xl text-text-primary">訂單管理</h1>
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-text-secondary hidden sm:inline">狀態篩選</label>
+      <div class="flex items-center border border-border-hairline rounded-full px-3 py-1.5 bg-white">
+        <select
+          v-model="statusFilter"
+          class="text-sm focus:outline-none bg-transparent"
+        >
+          <option value="">全部</option>
+          <option value="pending">待付款</option>
+          <option value="paid">已付款</option>
+          <option value="failed">付款失敗</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -20,28 +22,29 @@
   </div>
 
   <template v-else>
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <!-- Desktop table -->
+    <div class="hidden md:block bg-white rounded-card shadow-sm overflow-hidden">
       <table class="w-full text-sm">
         <thead>
-          <tr class="bg-gray-50 text-text-muted">
+          <tr class="bg-rose-bg text-text-muted">
             <th class="text-left px-4 py-3 font-normal">訂單編號</th>
             <th class="text-left px-4 py-3 font-normal">買家</th>
-            <th class="text-right px-4 py-3 font-normal">金額</th>
-            <th class="text-center px-4 py-3 font-normal">狀態</th>
-            <th class="text-right px-4 py-3 font-normal">日期</th>
+            <th class="text-left px-4 py-3 font-normal">金額</th>
+            <th class="text-left px-4 py-3 font-normal">狀態</th>
+            <th class="text-left px-4 py-3 font-normal">日期</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="order in orders"
             :key="order.id"
-            class="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+            class="border-t border-border-hairline hover:bg-rose-bg/40 cursor-pointer"
             @click="viewDetail(order.id)"
           >
             <td class="px-4 py-3 text-text-primary">{{ order.order_no }}</td>
             <td class="px-4 py-3 text-text-secondary">{{ order.recipient_name }}</td>
-            <td class="px-4 py-3 text-right text-text-primary">NT$ {{ order.total_amount.toLocaleString() }}</td>
-            <td class="px-4 py-3 text-center">
+            <td class="px-4 py-3 text-left font-display text-berry">NT$ {{ order.total_amount.toLocaleString() }}</td>
+            <td class="px-4 py-3 text-left">
               <span
                 class="text-xs px-2 py-1 rounded-full"
                 :class="statusMap[order.status]?.cls || 'bg-gray-100 text-gray-600'"
@@ -49,12 +52,36 @@
                 {{ statusMap[order.status]?.label || order.status }}
               </span>
             </td>
-            <td class="px-4 py-3 text-right text-text-muted">
+            <td class="px-4 py-3 text-left text-text-muted">
               {{ new Date(order.created_at).toLocaleDateString('zh-TW') }}
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile card list -->
+    <div class="md:hidden flex flex-col gap-3">
+      <div
+        v-for="order in orders"
+        :key="'m-' + order.id"
+        @click="viewDetail(order.id)"
+        class="flex flex-col gap-2 bg-white rounded-card p-4 cursor-pointer"
+      >
+        <div class="flex items-center justify-between">
+          <span class="font-display text-sm text-text-primary">{{ order.order_no }}</span>
+          <span
+            class="text-xs px-2.5 py-1 rounded-full"
+            :class="statusMap[order.status]?.cls || 'bg-gray-100 text-gray-600'"
+          >
+            {{ statusMap[order.status]?.label || order.status }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-text-secondary text-xs">{{ order.recipient_name }}</span>
+          <span class="font-display text-berry text-sm">NT$ {{ order.total_amount.toLocaleString() }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -74,13 +101,13 @@
   <!-- Order Detail Modal -->
   <div v-if="detailVisible" class="fixed inset-0 z-50 flex items-center justify-center">
     <div class="absolute inset-0 bg-black/40" @click="detailVisible = false"></div>
-    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[80vh] overflow-y-auto">
+    <div class="relative bg-white rounded-card shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[80vh] overflow-y-auto">
       <div v-if="detailLoading" class="flex justify-center py-8">
         <div class="w-8 h-8 border-4 border-rose-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
       <template v-else-if="detailOrder">
         <div class="flex items-start justify-between mb-4">
-          <h3 class="text-lg font-semibold text-text-primary">訂單詳情</h3>
+          <h3 class="font-display text-lg text-text-primary">訂單詳情</h3>
           <button @click="detailVisible = false" class="text-text-muted hover:text-text-primary text-lg">&times;</button>
         </div>
 
@@ -109,35 +136,35 @@
             </div>
           </div>
 
-          <div class="border-t border-gray-100 pt-4">
+          <div class="border-t border-border-hairline pt-4">
             <p class="text-text-muted mb-2">收件資訊</p>
             <p class="text-text-primary">{{ detailOrder.recipient_name }}</p>
             <p class="text-text-secondary">{{ detailOrder.recipient_email }}</p>
             <p class="text-text-secondary">{{ detailOrder.recipient_address }}</p>
           </div>
 
-          <div class="border-t border-gray-100 pt-4">
+          <div class="border-t border-border-hairline pt-4">
             <p class="text-text-muted mb-2">商品明細</p>
             <table class="w-full">
               <thead>
-                <tr class="text-text-muted border-b border-gray-100">
+                <tr class="text-text-muted border-b border-border-hairline">
                   <th class="text-left py-2 font-normal">商品名稱</th>
-                  <th class="text-right py-2 font-normal">單價</th>
-                  <th class="text-right py-2 font-normal">數量</th>
-                  <th class="text-right py-2 font-normal">小計</th>
+                  <th class="text-left py-2 font-normal">單價</th>
+                  <th class="text-left py-2 font-normal">數量</th>
+                  <th class="text-left py-2 font-normal">小計</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in detailOrder.items" :key="item.id" class="border-b border-gray-50">
+                <tr v-for="item in detailOrder.items" :key="item.id" class="border-b border-border-hairline/60">
                   <td class="py-2 text-text-primary">{{ item.product_name }}</td>
-                  <td class="py-2 text-right">NT$ {{ item.product_price.toLocaleString() }}</td>
-                  <td class="py-2 text-right">{{ item.quantity }}</td>
-                  <td class="py-2 text-right font-medium">NT$ {{ (item.product_price * item.quantity).toLocaleString() }}</td>
+                  <td class="py-2 text-left">NT$ {{ item.product_price.toLocaleString() }}</td>
+                  <td class="py-2 text-left">{{ item.quantity }}</td>
+                  <td class="py-2 text-left font-medium">NT$ {{ (item.product_price * item.quantity).toLocaleString() }}</td>
                 </tr>
               </tbody>
             </table>
-            <div class="flex justify-end mt-3 pt-2 border-t border-gray-100">
-              <span class="font-bold text-rose-primary text-lg">總計 NT$ {{ detailOrder.total_amount.toLocaleString() }}</span>
+            <div class="flex justify-start mt-3 pt-2 border-t border-border-hairline">
+              <span class="font-display text-berry text-lg">總計 NT$ {{ detailOrder.total_amount.toLocaleString() }}</span>
             </div>
           </div>
         </div>

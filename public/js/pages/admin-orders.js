@@ -12,9 +12,9 @@ createApp({
     const detailLoading = ref(false);
 
     const statusMap = {
-      pending: { label: '待付款', cls: 'bg-yellow-100 text-yellow-800' },
-      paid: { label: '已付款', cls: 'bg-green-100 text-green-800' },
-      failed: { label: '付款失敗', cls: 'bg-red-100 text-red-800' },
+      pending: { label: '待付款', cls: 'bg-apricot text-white' },
+      paid: { label: '已付款', cls: 'bg-sage text-white' },
+      failed: { label: '付款失敗', cls: 'bg-berry text-white' },
     };
 
     async function loadOrders(page) {

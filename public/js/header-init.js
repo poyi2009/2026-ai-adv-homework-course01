@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
   const authNav = document.getElementById('auth-nav');
-  const cartBadge = document.getElementById('cart-badge');
+  const cartBadges = document.querySelectorAll('.cart-badge');
   const ordersLink = document.getElementById('orders-link');
+  const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+  const mobileNavPanel = document.getElementById('mobile-nav-panel');
 
   if (authNav) {
     if (Auth.isLoggedIn()) {
@@ -14,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
       html += '<button onclick="Auth.logout()" class="text-text-muted hover:text-rose-primary transition-colors">登出</button>';
       authNav.innerHTML = html;
     } else {
-      authNav.innerHTML = '<a href="/login" class="bg-rose-primary text-white px-4 py-1.5 rounded-full hover:bg-rose-dark transition-colors">登入</a>';
+      authNav.innerHTML = '<a href="/login" class="bg-rose-primary text-white px-5 py-2 rounded-full hover:bg-rose-dark transition-colors">登入</a>';
     }
   }
 
@@ -22,12 +24,20 @@ document.addEventListener('DOMContentLoaded', function () {
     ordersLink.style.display = Auth.isLoggedIn() ? '' : 'none';
   }
 
-  if (cartBadge) {
+  if (cartBadges.length) {
     apiFetch('/api/cart').then(function (res) {
       if (res && res.data && res.data.items && res.data.items.length > 0) {
-        cartBadge.textContent = res.data.items.length;
-        cartBadge.style.display = 'flex';
+        cartBadges.forEach(function (badge) {
+          badge.textContent = res.data.items.length;
+          badge.style.display = 'flex';
+        });
       }
     }).catch(function () {});
+  }
+
+  if (mobileMenuToggle && mobileNavPanel) {
+    mobileMenuToggle.addEventListener('click', function () {
+      mobileNavPanel.style.display = mobileNavPanel.style.display === 'flex' ? 'none' : 'flex';
+    });
   }
 });

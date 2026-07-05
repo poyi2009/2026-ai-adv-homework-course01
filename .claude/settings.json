@@ -8,7 +8,9 @@
       "Bash(rm -rf *)",
       "Bash(sudo *)",
       "Bash(git push *)",
-      "Bash(git reset --hard *)"
+      "Bash(git reset --hard *)",
+      "Read(./.env)",
+      "Read(./.env.*)"
     ]
   },
   "sandbox": {
