@@ -36,5 +36,26 @@ coverage/
 *.tmp
 *.swp
 
+# Playwright MCP test artifacts
+.playwright-mcp/
+.claude/agents
+.claude/command
+.claude/hooks
+.claude/skills/ecpay
+.claude/launch.json
+.claude/routines
+.claude/workflows
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc
+
 .claude/*.local.json
 public/css/output.css
+.mcp.json
