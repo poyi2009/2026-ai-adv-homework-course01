@@ -13,15 +13,38 @@ description: 使用 Playwright MCP 對花漾生活（本專案）進行綠界 EC
 
 ## 環境準備
 
-1. **先確認伺服器是否已在執行**：用 `curl -s -o /dev/null -w "%{http_code}" http://localhost:3001` 或 `ss -tlnp | grep 3001` 檢查 port 3001 是否已有服務回應。若已有（例如前一次對話留下的背景程序），直接沿用即可，不需重新啟動。
-2. **啟動開發伺服器**：若尚未啟動，執行 `npm run dev:server`（預設 port 3001，需要 `.env` 內的 `JWT_SECRET` 等變數存在）。
-   - ⚠️ 若舊的伺服器程序仍在背景執行，重新啟動會立即因 `EADDRINUSE` crash，背景任務會收到「failed」通知——這不代表測試環境有問題，只代表 port 已被舊程序佔用。用上一步的方式確認舊程序仍正常回應即可，無需理會該失敗通知，也不必費工夫去釐清是哪個 PID 在監聽。
+1. **伺服器一律由使用者在自己的終端機手動啟動，Claude 不要用 Bash 工具啟動或用 curl／ss 檢查伺服器狀態**（原因與具體步驟見下方第 2 點）。若使用者尚未啟動，先請使用者依第 2 點的步驟啟動，確認後再繼續測試。
+
+2. **⚠️ 網路命名空間隔離**：Claude 的 Bash 工具（即使加 `run_in_background: true`）會在獨立的 network namespace 執行——可用 `ip addr show eth0` 驗證，若回報 `Device does not exist` 代表目前在沙盒 namespace（只有 `lo`）。而 Playwright MCP（`.mcp.json` 中由 harness 直接啟動）與其開出的瀏覽器，是跑在真正的 host network namespace（有 `eth0`）。兩個 namespace 各自有獨立的 loopback，互不相通：
+   - 若伺服器是被 Claude 的 Bash 工具啟動，瀏覽器連 `localhost:3001` 會出現 `net::ERR_CONNECTION_REFUSED`，即使 Bash 自己 curl 得到 200。
+   - 反過來，若伺服器改由使用者手動啟動在 host namespace，Claude 的 Bash 工具用 `curl`／`ss` 檢查該 port 反而會回報連不到（`000`／看不到監聽中的 port）——這是**預期中的假陰性**，不代表伺服器沒有在跑，不要因此誤判、也不要嘗試用 Bash 重新啟動伺服器。
+
+   **解法（已實測驗證整條付款流程可行，全程不需要 `dangerouslyDisableSandbox: true`）**：請使用者開一個「非 Claude Code 內建」的終端機（例如 Windows Terminal 的 Ubuntu/WSL profile、`wsl.exe`，或 VS Code 一般整合終端機——重點是使用者自己打字執行的 shell，不經過 Claude 的 Bash 工具），手動執行：
+
+   ```bash
+   cd <本專案的根目錄>
+   tmux new -s devserver
+   npm run dev:server
+   # 按 Ctrl+B 再按 D 可以 detach，伺服器繼續在背景跑；之後看 log：tmux attach -t devserver
+   ```
+
+   或不用 tmux：
+
+   ```bash
+   cd <本專案的根目錄>
+   nohup npm run dev:server > /tmp/dev-server.log 2>&1 &
+   disown
+   ```
+
+   因為使用者手動輸入的指令不經過 Claude Bash 工具的沙盒管線，天生就跟 Playwright 瀏覽器落在同一個 host network namespace。
+
+   **確認伺服器是否可用時，改直接呼叫 `browser_navigate` 到 `http://localhost:3001`，不要用 Bash 的 curl/ss**：能正常載入頁面就代表沒問題；若出現 `net::ERR_CONNECTION_REFUSED`，才需要請使用者確認終端機裡的伺服器是否還在跑（例如 `tmux attach -t devserver` 查看，或重新執行上面的啟動指令）。
+
+   測試結束後，使用者可自行關閉：`tmux kill-session -t devserver` 或 `kill $(lsof -ti:3001)`。
+
 3. **確認 Playwright 瀏覽器可視化顯示**：本專案透過 Playwright MCP 直接在 WSL 內啟動瀏覽器（`.mcp.json` 的 `playwright` server 設定 `--executable-path` 指向已安裝的 Chromium），並利用 WSLg 把視窗顯示在 Windows 桌面上，讓使用者能即時看到測試過程。
    - 若第一次呼叫 `browser_navigate` 出現「Target page, context or browser has been closed」錯誤，通常是前一個 session 的瀏覽器已關閉；直接重新呼叫一次 `browser_navigate` 即可自動啟動新瀏覽器，不需要額外處理或提前排查。
-4. **⚠️ 網路沙盒陷阱**：若用一般 Bash 工具（`nohup ... &` 或 `run_in_background`）啟動伺服器，很可能跑在跟 Playwright 瀏覽器不同的網路命名空間，導致瀏覽器連到 `localhost:3001` 時出現 `net::ERR_CONNECTION_REFUSED`（即使 Bash 自己 curl 得到 200）。
-   - **判斷方式**：在 Bash 裡執行 `ip addr show eth0`，如果報 "Device does not exist"，代表目前處在沙盒網路命名空間。
-   - **解法**：啟動伺服器時，`Bash` 工具call同時加上 `run_in_background: true` 與 `dangerouslyDisableSandbox: true`，讓伺服器跑在跟瀏覽器相同的真實主機網路環境。
-5. **系統依賴套件**：若瀏覽器啟動報 `Missing system dependencies`，需要 `sudo apt-get install -y libnss3 libnspr4 libasound2t64`（Ubuntu 24.04 環境）。
+4. **系統依賴套件**：若瀏覽器啟動報 `Missing system dependencies`，需要 `sudo apt-get install -y libnss3 libnspr4 libasound2t64`（Ubuntu 24.04 環境）。
 
 ## 測試步驟（正常流程）
 
